@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <title>My to-do list</title>
+        <link href='https://fonts.googleapis.com/css?family=Cantarell' rel='stylesheet'>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+        <style>
+            .container{
+                width: 400px;
+                height: 450px;
+                padding: 0;
+                margin: 0 auto;
+            }
+
+            .add{
+                width: 400px;
+                height: 50px;
+                padding: 0;
+                margin: 0;
+            }
+
+            .clear{
+                width: 50px;
+                height: 50px;
+                float: left;
+                background-color: lightcyan;
+                position: relative;
+            }
+
+            .input{
+                width: 300px;
+                height: 50px;
+                background-color: lightblue;
+                float: left;
+                position: relative;
+            }
+
+            .input input, .clear i, .plus i{
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+            }
+
+            .input input{
+                font-size: 20px;
+                padding: 10px;
+                width: 270px;
+                border: none;
+            }
+
+            .clear i, .plus i{
+                font-size: 30px;
+                color: lightslategray;
+                cursor: pointer;
+            }
+
+            .clear i:hover{
+                text-shadow: 1px 3px 5px rgba(0, 0, 0, 0.3);
+                transform: translate(-50%, -50%) rotate(45deg);
+            }
+
+            .plus i:hover{
+                text-shadow: 1px 3px 5px rgba(0, 0, 0, 0.3);
+            }
+
+            .plus{
+                width: 50px;
+                height: 50px;
+                background-color: lightgreen;
+                float: left;
+                position: relative;
+            }
+
+            .content{
+                padding: 0;
+                margin: 0;
+                background-color: lightpink;
+                width: 400px;
+                height: 400px;
+                float: left;
+                overflow: auto;
+            }
+
+            .content::-webkit-scrollbar{
+                display: none;
+            }
+
+            .item{
+                width: 400px;
+                height: 50px;
+                position: relative;
+                list-style: none;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+
+            .content ul{
+                padding: 0;
+                margin: 0;
+            }
+
+            i.check{
+                position: absolute;
+                top: 10px;
+                left: 12px;
+                font-size: 32px;
+            }
+
+            .item p{
+                position: absolute;
+                top: 8px;
+                left: 55px;
+                padding: 0;
+                margin: 0;
+                font-size: 25px;
+                font-family: 'Cantarell';
+                width: 300px;
+            }
+
+            .lineThrough{
+                text-decoration: line-through;
+                color: rgba(0, 0, 0, 0.3);
+            }
+
+            i.delete{
+                position: absolute;
+                top: 10px;
+                right: 12px;
+                font-size: 32px;
+            }
+
+            i.check, i.delete:hover{
+                cursor: pointer;
+            }
+
+            i.delete:hover{
+                color: lightcoral;
+            }
+
+            .fa-check-circle{
+                color: lightseagreen;
+            }
+
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="add">
+                <div class="clear">
+                    <i class="fa fa-refresh" id="clear-all"></i>
+                </div>
+                <div class="input">
+                    <input id="input" type="text" placeholder="Add to-do">
+                </div>
+                <div class="plus">
+                    <i class="fa fa-plus" id="add"></i>
+                </div>
+            </div>
+            <div class="content">
+                <ul class="list">
+                    <!--add here-->
+                </ul>
+            </div>
+        </div>
+        <script>
+            const list = document.querySelector(".list");
+            const input = document.getElementById("input");
+            const addField = document.getElementById("add");
+            const clearAll = document.getElementById("clear-all");
+
+            const CHECK = "fa-check-circle";
+            const UNCHECK = "fa-circle-thin";
+            const LINE_THROUGH = "lineThrough";
+
+            let data = localStorage.getItem("TODO");
+            let LIST, id;
+
+            if(data){
+                LIST = JSON.parse(data);
+                id = LIST.length;
+                loadList(LIST);
+            }else{
+                LIST = [];
+                id = 0;    
+            }
+
+            function loadList(array){
+                array.forEach(function(item){
+                    addToDo(item.taskName, item.id, item.done, item.trash);
+                });
+            }
+
+            function addToDo(toDo, id, done, trash){
+                
+                if(trash){ return;}
+
+                const DONE = done ? CHECK : UNCHECK;
+                const LINE = done ? LINE_THROUGH : "";
+
+                let item = `
+                        <li class="item">
+                            <i class="fa ${DONE} check" job="check" id="${id}"></i>
+                            <p class="text ${LINE}">${toDo}</p>
+                            <i class="fa fa-trash-o delete" job="delete" id="${id}"></i>
+                        </li>
+                        `;
+
+                list.insertAdjacentHTML("afterbegin", item);
+            }
+
+            addField.addEventListener("click", add);
+            document.addEventListener("keyup", add);
+
+            function add(event){
+                if(event.key == "Enter" || event.target.id == "add"){
+                    const toDo = input.value;
+                    if(toDo){
+                        addToDo(toDo, id, false);
+
+                        LIST.push({
+                            taskName: toDo,
+                            id: id,
+                            done: false,
+                            trash: false
+                        });
+
+                        localStorage.setItem("TODO", JSON.stringify(LIST));
+
+                        id++;
+                    }
+                    input.value = "";
+                }
+            }
+
+            list.addEventListener("click", function(event){
+                const element = event.target;
+                const elementJob = element.attributes.job.value;
+
+                if(elementJob == "check"){
+                    complete(element);
+                }else if(elementJob == "delete"){
+                    remove(element);
+                }
+
+                localStorage.setItem("TODO", JSON.stringify(LIST));
+            });
+
+            function complete(element){
+                element.classList.toggle(CHECK);
+                element.classList.toggle(UNCHECK);
+
+                element.parentNode.querySelector(".text").classList.toggle(LINE_THROUGH);
+
+                LIST[element.id].done = LIST[element.id].done ? false : true;
+            }
+
+            function remove(element){
+                element.parentNode.parentNode.removeChild(element.parentNode);
+
+                LIST[element.id].trash = true;
+            }
+
+            clearAll.addEventListener("click", function(){
+                localStorage.clear();
+                location.reload();
+            });
+
+        </script>
+    </body>
+</html>
